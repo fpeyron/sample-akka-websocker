@@ -1,7 +1,7 @@
 package io.newsbridge.sample
 
 import akka.NotUsed
-import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Sink, Source}
@@ -18,21 +18,21 @@ object UserActor {
 
 }
 
-class UserActor(chatRoom: ActorRef)(implicit system: ActorSystem) extends Actor {
+class UserActor(chatRoomActor: ActorRef)(implicit system: ActorSystem) extends Actor with ActorLogging {
 
   import UserActor._
 
   override def receive = {
     case Connected(outgoing, channel: String) =>
       context.become {
-        chatRoom ! ChatRoomActor.Joined(channel)
+        chatRoomActor ! ChatRoomActor.Joined(channel)
 
         {
           case IncomingMessage(text) =>
-            chatRoom ! ChatRoomActor.messageAdded(channel, text)
+            chatRoomActor ! ChatRoomActor.messageAdded(channel, text)
 
-          case ChatRoomActor.messageAdded(channel, text) =>
-            outgoing ! OutgoingMessage(text)
+          case message: OutgoingMessage =>
+            outgoing ! message
         }
       }
   }
@@ -40,7 +40,7 @@ class UserActor(chatRoom: ActorRef)(implicit system: ActorSystem) extends Actor 
 
   def newUser(channel: String): Flow[Message, Message, NotUsed] = {
     // new connection - new user actor
-    val userActor = system.actorOf(Props(new UserActor(chatRoom)))
+    val userActor = system.actorOf(Props(new UserActor(chatRoomActor)))
 
     val incomingMessages: Sink[Message, NotUsed] =
       Flow[Message].map {
