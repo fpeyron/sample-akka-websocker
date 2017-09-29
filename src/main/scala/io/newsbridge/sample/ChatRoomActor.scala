@@ -1,7 +1,6 @@
 package io.newsbridge.sample
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Terminated}
-import io.newsbridge.sample.UserActor.EventMessage
 
 object ChatRoomActor {
 
@@ -10,7 +9,6 @@ object ChatRoomActor {
   case class Joined(channel: String) extends ChannelEvent
 
   case class MessageAdded(channels: List[String], event: String, data: Option[String]) extends ChannelEvent
-
 
   sealed trait ChannelQuery
 
@@ -35,9 +33,9 @@ class ChatRoomActor extends Actor with ActorLogging {
       Chats.removeUser(sender)
 
     case msg: MessageAdded =>
-      log.info(s"${sender.toString()} : messageAdded : ${msg.data}")
+      log.info(s"${sender.toString()} : messageAdded to ${msg.channels.mkString(",")} : ${msg.event} : ${msg.data}")
       msg.channels foreach (channel =>
-        Chats.getUsersChannel(channel) foreach (_ ! EventMessage(msg.event, msg.data))
+        Chats.getUsersChannel(channel) foreach (_ ! UserActor.MessagePushed(event = msg.event, data = msg.data))
         )
 
 

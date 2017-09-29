@@ -28,22 +28,20 @@ class ChatRoomService(chatRoomActor: ActorRef)(implicit system: ActorSystem) {
     val incomingMessages: Sink[Message, NotUsed] =
       Flow[Message].map {
         // transform websocket message to domain message
-        case TextMessage.Strict(text) => UserActor.EventMessage("event", Some(text))
-      }.to(Sink.actorRef[UserActor.EventMessage](userActor, PoisonPill))
+        case TextMessage.Strict(text) => UserActor.AddMessage("event", Some(text))
+      }.to(Sink.actorRef[UserActor.AddMessage](userActor, PoisonPill))
 
 
-    val outgoingMessages: Source[Message, NotUsed] = Source
-      .actorRef[UserActor.EventMessage
-      ](10, OverflowStrategy.fail)
+    val outgoingMessages: Source[Message, NotUsed] = Source.actorRef[UserActor.MessagePushed](10, OverflowStrategy.fail)
       // give the user actor a way to send messages out
       .mapMaterializedValue { outActor =>
       userActor ! UserActor.Connected(outActor, channel)
       NotUsed
     }
       // transform domain message to web socket message
-      .map((outMsg: UserActor.EventMessage) => TextMessage(outMsg.data.orNull))
+      .map((outMsg: UserActor.MessagePushed) => TextMessage(outMsg.data.map(data => s"${outMsg.event} : $data").getOrElse(outMsg.event)))
       // timeout
-      .keepAlive(FiniteDuration(60, TimeUnit.SECONDS), () => TextMessage.Strict("Heart Beat"))
+      .keepAlive(FiniteDuration(60, TimeUnit.SECONDS), () => TextMessage.Strict("ping"))
 
     // then combine both to a flow
     Flow.fromSinkAndSource(incomingMessages, outgoingMessages)

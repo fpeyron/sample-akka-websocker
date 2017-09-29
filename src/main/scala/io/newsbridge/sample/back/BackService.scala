@@ -7,17 +7,17 @@ import akka.actor.ActorRef
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.util.Timeout
+import com.fasterxml.jackson.annotation.JsonAnyGetter
 import io.newsbridge.sample.ChatRoomActor.GetChannels
 import io.newsbridge.sample.back.BackService._
 import io.newsbridge.sample.{ChatRoomActor, CorsSupport, DefaultJsonFormats}
-import io.swagger.annotations
 import io.swagger.annotations._
 import spray.json.RootJsonFormat
 
 import scala.concurrent.ExecutionContext
 
 
-@annotations.Api(value = "/apps", produces = MediaType.APPLICATION_JSON)
+@Api(value = "/apps", produces = MediaType.APPLICATION_JSON)
 @Path("/apps")
 class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionContext)
   extends Directives with DefaultJsonFormats with CorsSupport {
@@ -29,8 +29,8 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
   implicit val timeout: Timeout = Timeout(2.seconds)
 
   implicit val getChannelResponse: RootJsonFormat[GetChannelResponse] = jsonFormat3(GetChannelResponse)
-  implicit val getChannelsResponse: RootJsonFormat[GetChannelsResponse] = jsonFormat1(GetChannelsResponse)
   implicit val getChannelsResponseDetail: RootJsonFormat[GetChannelsResponseDetail] = jsonFormat1(GetChannelsResponseDetail)
+  implicit val getChannelsResponse: RootJsonFormat[GetChannelsResponse] = jsonFormat1(GetChannelsResponse)
   implicit val pushEventRequest: RootJsonFormat[PushEventRequest] = jsonFormat4(PushEventRequest)
   implicit val pushEventsRequest: RootJsonFormat[PushEventsRequest] = jsonFormat1(PushEventsRequest)
   implicit val pushEventsRequestDetail: RootJsonFormat[PushEventsRequestDetail] = jsonFormat4(PushEventsRequestDetail)
@@ -134,8 +134,8 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
 object BackService {
 
   case class GetChannelsResponse(
-                                  //@JsonAnyGetter
-                                  @ApiModelProperty(value = "channels", required = true) channels: Map[String, GetChannelsResponseDetail]
+                                   @JsonAnyGetter
+                                   @ApiModelProperty(value = "channels", required = true) channels: Map[String, GetChannelsResponseDetail]
                                 ) {
   }
 
