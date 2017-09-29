@@ -7,17 +7,17 @@ import akka.actor.ActorRef
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.util.Timeout
-import com.fasterxml.jackson.annotation.JsonAnyGetter
-import io.newsbridge.sample.ChatRoomActor.{GetChannels, TriggerMessage}
+import io.newsbridge.sample.ChatRoomActor.GetChannels
 import io.newsbridge.sample.back.BackService._
-import io.newsbridge.sample.{CorsSupport, DefaultJsonFormats}
+import io.newsbridge.sample.{ChatRoomActor, CorsSupport, DefaultJsonFormats}
+import io.swagger.annotations
 import io.swagger.annotations._
 import spray.json.RootJsonFormat
 
 import scala.concurrent.ExecutionContext
 
 
-@Api(value = "/apps", produces = MediaType.APPLICATION_JSON)
+@annotations.Api(value = "/apps", produces = MediaType.APPLICATION_JSON)
 @Path("/apps")
 class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionContext)
   extends Directives with DefaultJsonFormats with CorsSupport {
@@ -29,27 +29,29 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
   implicit val timeout: Timeout = Timeout(2.seconds)
 
   implicit val getChannelResponse: RootJsonFormat[GetChannelResponse] = jsonFormat3(GetChannelResponse)
-  implicit val findChannelsResponseDetail: RootJsonFormat[FindChannelsResponseDetail] = jsonFormat1(FindChannelsResponseDetail)
-  implicit val findChannelsResponse: RootJsonFormat[FindChannelsResponse] = jsonFormat1(FindChannelsResponse)
+  implicit val getChannelsResponse: RootJsonFormat[GetChannelsResponse] = jsonFormat1(GetChannelsResponse)
+  implicit val getChannelsResponseDetail: RootJsonFormat[GetChannelsResponseDetail] = jsonFormat1(GetChannelsResponseDetail)
   implicit val pushEventRequest: RootJsonFormat[PushEventRequest] = jsonFormat4(PushEventRequest)
   implicit val pushEventsRequest: RootJsonFormat[PushEventsRequest] = jsonFormat1(PushEventsRequest)
   implicit val pushEventsRequestDetail: RootJsonFormat[PushEventsRequestDetail] = jsonFormat4(PushEventsRequestDetail)
 
 
-  val route: Route = findChannels ~ getChannel ~ pushEvent ~ pushEvents
+  val route: Route = getChannels ~ getChannel ~ pushEvent ~ pushEvents
 
 
   @Path("/channels")
   @ApiOperation(value = "find channels", notes = "", nickname = "findChannels", httpMethod = "GET")
   @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "Return list of channels", response = classOf[FindChannelsResponse]),
+    new ApiResponse(code = 200, message = "Return list of channels", response = classOf[GetChannelsResponse]),
     new ApiResponse(code = 500, message = "Internal server error")
   ))
-  def findChannels: Route = path("apps" / "channels") {
+  def getChannels: Route = path("apps" / "channels") {
     get {
       complete(
         (chatRoomActor ? GetChannels).mapTo[Map[String, Long]] map { res =>
-          FindChannelsResponse(channels = res map (channel => channel._1 -> FindChannelsResponseDetail(user_count = channel._2) ))
+          GetChannelsResponse(channels =
+            res map (channel => channel._1 -> GetChannelsResponseDetail(user_count = channel._2))
+          )
         }
       )
     }
@@ -70,9 +72,9 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
     get {
       complete(
         (chatRoomActor ? GetChannels).mapTo[Map[String, Long]] map { res =>
-        res.find(_._1 == id)
-          .map(channel => GetChannelResponse(occupied = true, user_count = channel._2, subscription_count = channel._2))
-          .getOrElse(GetChannelResponse(occupied = false, user_count = 0l, subscription_count = 0l))
+          res.find(_._1 == id)
+            .map(channel => GetChannelResponse(occupied = true, user_count = channel._2, subscription_count = channel._2))
+            .getOrElse(GetChannelResponse(occupied = false, user_count = 0l, subscription_count = 0l))
         }
       )
     }
@@ -92,10 +94,10 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
     post {
       entity(as[PushEventRequest]) { request =>
         complete {
-          chatRoomActor ! TriggerMessage(channels = request.channels, message = request.myData.orNull)
-            HttpResponse(
-              status = StatusCodes.OK
-            )
+          chatRoomActor ! ChatRoomActor.MessageAdded(channels = request.channels, event = request.name, data = request.data)
+          HttpResponse(
+            status = StatusCodes.OK
+          )
         }
       }
     }
@@ -115,8 +117,9 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
     post {
       entity(as[PushEventsRequest]) { request =>
         complete {
-          Seq[String]()
-
+          request.batch map { event =>
+            chatRoomActor ! ChatRoomActor.MessageAdded(channels = List(event.channel), event = event.name, data = event.data)
+          }
           HttpResponse(
             status = StatusCodes.OK
           )
@@ -130,15 +133,15 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
 
 object BackService {
 
-  case class FindChannelsResponse(
-                                   @JsonAnyGetter
-                                   @ApiModelProperty(value = "channels", required = true) channels: Map[String, FindChannelsResponseDetail]
-                                 ) {
+  case class GetChannelsResponse(
+                                  //@JsonAnyGetter
+                                  @ApiModelProperty(value = "channels", required = true) channels: Map[String, GetChannelsResponseDetail]
+                                ) {
   }
 
-  case class FindChannelsResponseDetail(
-                                         @ApiModelProperty(value = "user_count", required = true, example = "11") user_count: Long
-                                       ) {
+  case class GetChannelsResponseDetail(
+                                        @ApiModelProperty(value = "user_count", required = true, example = "11") user_count: Long
+                                      ) {
   }
 
   case class GetChannelResponse(
@@ -150,8 +153,8 @@ object BackService {
 
   case class PushEventRequest(
                                @ApiModelProperty(value = "name", required = true, example = "myNewEvent") name: String,
-                               @ApiModelProperty(value = "data", required = false, example = "{\"val1\":\"myval1\", \"val\":\"myval2\"}") myData: Option[String],
-                               @ApiModelProperty(value = "channels", required = true) channels: Seq[String],
+                               @ApiModelProperty(value = "data", required = false, example = "{\"val1\":\"myval1\", \"val\":\"myval2\"}") data: Option[String],
+                               @ApiModelProperty(value = "channels", required = true) channels: List[String],
                                @ApiModelProperty(value = "socketId", required = false) socketId: Option[String]
                              ) {
     require(Option(name).exists(_.length > 1), s"name should be more 1 chars: $name")
@@ -160,13 +163,13 @@ object BackService {
   }
 
   case class PushEventsRequest(
-                                @ApiModelProperty(value = "list of events to push", required = true) batch: String //List[PushEventsRequestDetail]
+                                @ApiModelProperty(value = "list of events to push", required = true) batch: List[PushEventsRequestDetail]
                               ) {
   }
 
   case class PushEventsRequestDetail(
                                       @ApiModelProperty(value = "name", required = true, example = "myNewEvent") name: String,
-                                      @ApiModelProperty(value = "data", required = false, example = "{\"val1\":\"myval1\", \"val\":\"myval2\"}") myData: Option[String],
+                                      @ApiModelProperty(value = "data", required = false, example = "{\"val1\":\"myval1\", \"val\":\"myval2\"}") data: Option[String],
                                       @ApiModelProperty(value = "last name", required = true, example = "myChannel1") channel: String,
                                       @ApiModelProperty(value = "socketId", required = false) socketId: Option[String]
                                     ) {

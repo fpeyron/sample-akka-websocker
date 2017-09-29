@@ -1,8 +1,7 @@
 package io.newsbridge.sample
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Terminated}
-
-import io.newsbridge.sample.UserActor.OutgoingMessage
+import io.newsbridge.sample.UserActor.EventMessage
 
 object ChatRoomActor {
 
@@ -10,11 +9,12 @@ object ChatRoomActor {
 
   case class Joined(channel: String) extends ChannelEvent
 
-  case class messageAdded(channel: String, message: String) extends ChannelEvent
+  case class MessageAdded(channels: List[String], event: String, data: Option[String]) extends ChannelEvent
 
-  case class TriggerMessage(channels: Seq[String], message: String) extends ChannelEvent
 
-  case object GetChannels extends ChannelEvent
+  sealed trait ChannelQuery
+
+  case object GetChannels extends ChannelQuery
 
 }
 
@@ -22,24 +22,24 @@ class ChatRoomActor extends Actor with ActorLogging {
 
   import io.newsbridge.sample.ChatRoomActor._
 
-  override def receive = {
+  override def receive: Actor.Receive = {
+
     case Joined(channel) =>
       log.info(s"${sender().toString()} : Joined")
       Chats.addUser(sender, channel)
       // we also would like to remove the user when its actor is stopped
       context.watch(sender)
 
-    case Terminated(_) =>
+    case Terminated =>
       log.info(s"${sender().toString()} : Terminated")
       Chats.removeUser(sender)
 
-    case msg: messageAdded =>
-      log.info(s"${sender.toString()} : messageAdded : ${msg.message}")
-      Chats.getUsersChannel(msg.channel) foreach (_ ! OutgoingMessage(msg.message))
+    case msg: MessageAdded =>
+      log.info(s"${sender.toString()} : messageAdded : ${msg.data}")
+      msg.channels foreach (channel =>
+        Chats.getUsersChannel(channel) foreach (_ ! EventMessage(msg.event, msg.data))
+        )
 
-    case msg : TriggerMessage =>
-      log.info(s"api : messageAdded : ${msg.message}")
-      msg.channels.map(Chats.getUsersChannel(_). foreach(_ ! OutgoingMessage(msg.message)))
 
     case GetChannels =>
       sender ! Chats.getChannels
@@ -59,8 +59,10 @@ object Chats {
     chats = chats.map(s => (s._1, s._2.filterNot(_ == userActor))).filterNot(_._2.isEmpty)
   }
 
-  def getUsersChannel(channel: String) = chats filter (_._1 == channel) flatMap (_._2)
+  def getUsersChannel(channel: String) =
+    chats filter (_._1 == channel) flatMap (_._2)
 
 
-  def getChannels = chats map (channel => (channel._1, channel._2.toList.length.toLong))
+  def getChannels =
+    chats map (channel => (channel._1, channel._2.toList.length.toLong))
 }

@@ -28,19 +28,20 @@ class ChatRoomService(chatRoomActor: ActorRef)(implicit system: ActorSystem) {
     val incomingMessages: Sink[Message, NotUsed] =
       Flow[Message].map {
         // transform websocket message to domain message
-        case TextMessage.Strict(text) => UserActor.IncomingMessage(text)
-      }.to(Sink.actorRef[UserActor.IncomingMessage](userActor, PoisonPill))
+        case TextMessage.Strict(text) => UserActor.EventMessage("event", Some(text))
+      }.to(Sink.actorRef[UserActor.EventMessage](userActor, PoisonPill))
 
 
     val outgoingMessages: Source[Message, NotUsed] = Source
-      .actorRef[UserActor.OutgoingMessage](10, OverflowStrategy.fail)
+      .actorRef[UserActor.EventMessage
+      ](10, OverflowStrategy.fail)
       // give the user actor a way to send messages out
       .mapMaterializedValue { outActor =>
       userActor ! UserActor.Connected(outActor, channel)
       NotUsed
     }
       // transform domain message to web socket message
-      .map((outMsg: UserActor.OutgoingMessage) => TextMessage(outMsg.text))
+      .map((outMsg: UserActor.EventMessage) => TextMessage(outMsg.data.orNull))
       // timeout
       .keepAlive(FiniteDuration(60, TimeUnit.SECONDS), () => TextMessage.Strict("Heart Beat"))
 

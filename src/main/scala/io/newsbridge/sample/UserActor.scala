@@ -12,9 +12,7 @@ object UserActor {
 
   case class Connected(outgoing: ActorRef, channel: String) extends UserEvent
 
-  case class IncomingMessage(text: String) extends UserEvent
-
-  case class OutgoingMessage(text: String) extends UserEvent
+  case class EventMessage(event: String, data: Option[String]) extends UserEvent
 
 }
 
@@ -22,16 +20,16 @@ class UserActor(chatRoomActor: ActorRef)(implicit system: ActorSystem) extends A
 
   import UserActor._
 
-  override def receive = {
+  override def receive: Actor.Receive = {
     case Connected(outgoing, channel: String) =>
       context.become {
         chatRoomActor ! ChatRoomActor.Joined(channel)
 
         {
-          case IncomingMessage(text) =>
-            chatRoomActor ! ChatRoomActor.messageAdded(channel, text)
+          case EventMessage(event, text) =>
+            chatRoomActor ! ChatRoomActor.MessageAdded(List(channel), "event", text)
 
-          case message: OutgoingMessage =>
+          case message: EventMessage =>
             outgoing ! message
         }
       }
@@ -45,18 +43,18 @@ class UserActor(chatRoomActor: ActorRef)(implicit system: ActorSystem) extends A
     val incomingMessages: Sink[Message, NotUsed] =
       Flow[Message].map {
         // transform websocket message to domain message
-        case TextMessage.Strict(text) => UserActor.IncomingMessage(text)
-      }.to(Sink.actorRef[UserActor.IncomingMessage](userActor, PoisonPill))
+        case TextMessage.Strict(text) => UserActor.EventMessage("event", Some(text))
+      }.to(Sink.actorRef[UserActor.EventMessage](userActor, PoisonPill))
 
     val outgoingMessages: Source[Message, NotUsed] =
-      Source.actorRef[UserActor.OutgoingMessage](10, OverflowStrategy.fail)
+      Source.actorRef[UserActor.EventMessage](10, OverflowStrategy.fail)
         .mapMaterializedValue { outActor =>
           // give the user actor a way to send messages out
           userActor ! UserActor.Connected(outActor, channel)
           NotUsed
         }.map(
         // transform domain message to web socket message
-        (outMsg: UserActor.OutgoingMessage) => TextMessage(outMsg.text))
+        (outMsg: UserActor.EventMessage) => TextMessage(outMsg.data.orNull))
 
     // then combine both to a flow
     Flow.fromSinkAndSource(incomingMessages, outgoingMessages)
