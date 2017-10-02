@@ -6,19 +6,26 @@
 </head>
 <body>
 
-<div class="notification"></div>
+<div class="notification1"></div>
+<div class="notification2"></div>
 
 <script>
 
     var pusher = new Pusher('bdc6cfd46c0aadd3ec01', {cluster: 'eu'});
 
-    var notificationsChannel = pusher.subscribe('notifications');
+    var notificationsChannel1 = pusher.subscribe('test-channel1');
 
-    notificationsChannel.bind('new_notification', function(notification){
+    notificationsChannel1.bind('new_event', function(notification){
         var message = notification.message;
-        $('div.notification').text(message);
+        $('div.notification1').text(message);
     });
 
+    var notificationsChannel2 = pusher.subscribe('test-channel2');
+
+    notificationsChannel2.bind('new_event', function(notification){
+        var message = notification.message;
+        $('div.notification2').text(message);
+    });
 </script>
 
 </body>

@@ -5,43 +5,59 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.util.Timeout
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 
-class ChatRoomService(chatRoomActor: ActorRef)(implicit system: ActorSystem) {
 
-  // implicit val timeout: Timeout = Timeout(2.seconds)
+class ChatRoomService(chatRoomActor: ActorRef)(implicit ec: ExecutionContext, system: ActorSystem) extends Directives with DefaultJsonFormats {
+  import scala.concurrent.duration._
+  import spray.json._
 
-  val route = path("chat" / Segment) { channel =>
+  implicit val timeout: Timeout = Timeout(2.seconds)
+  implicit val incomingMessage = jsonFormat2(ConnectedUserActor.IncomingMessage)
+  implicit val outgoingMessage = jsonFormat3(ConnectedUserActor.OutgoingMessage)
+
+
+  val route: Route = path("chat" ) {
     get {
-      handleWebSocketMessages(newUser(channel))
+      handleWebSocketMessages(newUser())
     }
   }
 
-  def newUser(channel: String): Flow[Message, Message, NotUsed] = {
-    // new connection - new user actor
-    val userActor = system.actorOf(Props(new UserActor(chatRoomActor)))
+  def newUser(): Flow[Message, Message, NotUsed] = {
 
+    // create a user actor per webSocket connection
+    val connectedWsActor = system actorOf(ConnectedUserActor.props(chatRoomActor))
+    //val connectedWsActor = system.actorOf(Props(new ConnectedUserActor(chatRoomActor)))
+
+    // incomingMessages representation
     val incomingMessages: Sink[Message, NotUsed] =
       Flow[Message].map {
-        // transform websocket message to domain message
-        case TextMessage.Strict(text) => UserActor.AddMessage("event", Some(text))
-      }.to(Sink.actorRef[UserActor.AddMessage](userActor, PoisonPill))
+        case TextMessage.Strict(text) =>
+          text.parseJson.convertTo[ConnectedUserActor.IncomingMessage]
+      }.to(Sink.actorRef(connectedWsActor, PoisonPill))
 
-
-    val outgoingMessages: Source[Message, NotUsed] = Source.actorRef[UserActor.MessagePushed](10, OverflowStrategy.fail)
-      // give the user actor a way to send messages out
-      .mapMaterializedValue { outActor =>
-      userActor ! UserActor.Connected(outActor, channel)
-      NotUsed
-    }
-      // transform domain message to web socket message
-      .map((outMsg: UserActor.MessagePushed) => TextMessage(outMsg.data.map(data => s"${outMsg.event} : $data").getOrElse(outMsg.event)))
-      // timeout
-      .keepAlive(FiniteDuration(60, TimeUnit.SECONDS), () => TextMessage.Strict("ping"))
+    // outgoingMessages representation
+    val outgoingMessages: Source[Message, NotUsed] =
+      Source
+        .actorRef[ConnectedUserActor.OutgoingMessage](10, OverflowStrategy.fail)
+        .mapMaterializedValue { outgoingActor =>
+          // you need to send a Connected message to get the actor in a state
+          // where it's ready to receive and send messages, we used the mapMaterialized value
+          // so we can get access to it as soon as this is materialized
+          connectedWsActor ! ConnectedUserActor.Connected(outgoingActor)
+          NotUsed
+        }
+        .map {
+          // Domain Model => WebSocket Message
+          case msg: ConnectedUserActor.OutgoingMessage => TextMessage(msg.toJson.toString())
+        }
+        // timeout
+        .keepAlive(FiniteDuration(60, TimeUnit.SECONDS), () => TextMessage.Strict("ping"))
 
     // then combine both to a flow
     Flow.fromSinkAndSource(incomingMessages, outgoingMessages)

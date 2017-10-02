@@ -6,32 +6,77 @@
     <title>Chat</title>
 </head>
 <body>
+
 <textarea id="message"></textarea>
 <button id="send">Send</button>
 <ul id="messages"></ul>
+<br/><br/>
+<input id="channel">
+<button id="subscribe">Subscribe</button>
+<br/>
+
+<div id="lc"></div>
 
 
 <script language="javascript">
     var $messages = $("#messages"),
         $send = $("#send"),
         $message = $("#message"),
-        connection = new WebSocket('ws://test:1234@localhost:8180/chat/myChannel2')
+        $channel = $("#channel"),
+        $subscribe = $("#subscribe"),
+        connection = new WebSocket('ws://test:1234@localhost:8180/chat')
 
     $send.prop("disabled", true)
     connection.onopen = function () {
         $send.prop("disabled", false)
         $messages.prepend($("<li>Connected</li>"))
-        $send.on('click', function () {
-            var text = $message.val()
-            $message.val("")
-            connection.send(text)
-        })
+        subscribe("myChannel1")
     }
+
+    function subscribe(channel) {
+        connection.send('{"event":"pusher:subscribe","data":{"channel":"' + channel + '"}}')
+        var element = document.createElement("div");
+        element.id = 'channel-' + channel;
+        element.innerHTML = channel + ' <a href="#" onclick="unsubscribe(\'' + channel + '\');">remove</a>'
+        document.getElementById('lc').appendChild(element);
+        return
+    }
+
+    function unsubscribe(channel) {
+        connection.send('{"event":"pusher:unsubscribe","data":{"channel":"' + channel + '"}}')
+        var element = document.getElementById("channel-" + channel)
+        element.parentElement.removeChild(element)
+        return
+    }
+
+    $send.on('click', function () {
+        var text = $message.val()
+        $message.val("")
+        connection.send(text)
+    })
+
+
+    $subscribe.on('click', function () {
+        subscribe($channel.val())
+        /*
+        var text = '{"event":"pusher:subscribe","data":{"channel":"' + $channel.val() + '"}}'
+        var element = document.createElement("div");
+        element.id = 'channel-' + $channel.val();
+        element.innerHTML = $channel.val() + ' <a href="#" onclick="unsubscribe(\'' + $channel.val() + '\');">remove</a>';
+        connection.send(text)
+        document.getElementById('lc').appendChild(element);
+        */
+        $channel.val("")
+    })
+
+
     connection.onerror = function (error) {
         console.log('WebSocket Error ', error)
     }
+
     connection.onmessage = function (event) {
-        $messages.prepend($("<li>" + event.data + "</li>"))
+        var eventContent = JSON.parse(event.data);
+        $messages.prepend($("<li>" + eventContent.channel +" - "+ eventContent.event + " : " + eventContent.data + "</li>"))
     }
 </script>
 </body>
