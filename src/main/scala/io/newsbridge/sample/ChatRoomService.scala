@@ -38,6 +38,7 @@ class ChatRoomService(chatRoomActor: ActorRef)(implicit ec: ExecutionContext, sy
       Flow[Message].map {
         case TextMessage.Strict(text) =>
           text.parseJson.convertTo[ConnectedUserActor.IncomingMessage]
+        case _ =>
       }.to(Sink.actorRef(connectedWsActor, PoisonPill))
 
     // outgoingMessages representation

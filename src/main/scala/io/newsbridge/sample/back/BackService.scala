@@ -32,8 +32,8 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
   implicit val getChannelsResponseDetail: RootJsonFormat[GetChannelsResponseDetail] = jsonFormat1(GetChannelsResponseDetail)
   implicit val getChannelsResponse: RootJsonFormat[GetChannelsResponse] = jsonFormat1(GetChannelsResponse)
   implicit val pushEventRequest: RootJsonFormat[PushEventRequest] = jsonFormat4(PushEventRequest)
-  implicit val pushEventsRequest: RootJsonFormat[PushEventsRequest] = jsonFormat1(PushEventsRequest)
   implicit val pushEventsRequestDetail: RootJsonFormat[PushEventsRequestDetail] = jsonFormat4(PushEventsRequestDetail)
+  implicit val pushEventsRequest: RootJsonFormat[PushEventsRequest] = jsonFormat1(PushEventsRequest)
 
 
   val route: Route = getChannels ~ getChannel ~ pushEvent ~ pushEvents
