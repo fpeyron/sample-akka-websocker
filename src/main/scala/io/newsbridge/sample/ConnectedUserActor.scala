@@ -1,38 +1,32 @@
 package io.newsbridge.sample
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import io.newsbridge.sample.ChatRoomActor.{JoinRoom, SubscribeChannel, UnsubscribeChannel}
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-
 object ConnectedUserActor {
 
-  sealed trait UserEvent
+  sealed trait Command
+  case class Connect(outgoing: ActorRef) extends Command
+  case class IncomingMessage(event: String, data: Option[Map[String, String]] = None) extends Command
+  case class OutgoingMessage(event: String, channel: Option[String] = None, data: Option[String] = None) extends Command
 
-  case class MessagePushed(event: String, data: Option[String]) extends UserEvent
+  sealed trait Event
+  case object ConnectionEstablished extends Event
+  case class UnsubscriptionSucceeded(channel: String) extends Event
+  case class SubscriptionSucceeded(channel: String) extends Event
+  case class MessageReceived(channel: String, event: String, data: Option[String]) extends Event
 
-  sealed trait UserCommand
-
-  case class AddMessage(event: String, data: Option[String]) extends UserEvent
 
 
-  sealed trait UserMessage
-
-  case class Connected(outgoing: ActorRef)
-
-  case class IncomingMessage(event: String, data: Option[Map[String, String]] = None) extends UserMessage
-
-  case class OutgoingMessage(event: String, channel: Option[String] = None, data: Option[String] = None) extends UserMessage
-
-  def props(chatRoomActor: ActorRef)(implicit ec: ExecutionContext) = Props(new ConnectedUserActor(chatRoomActor))
+  def props(chatRoomActor: ActorRef) = Props(new ConnectedUserActor(chatRoomActor))
 }
 
-class ConnectedUserActor(chatRoomActor: ActorRef)(implicit ec: ExecutionContext) extends Actor with ActorLogging {
+class ConnectedUserActor(chatRoomActor: ActorRef) extends Actor with ActorLogging {
 
   import ConnectedUserActor._
-  import akka.pattern.ask
 
   import scala.concurrent.duration._
 
@@ -40,51 +34,59 @@ class ConnectedUserActor(chatRoomActor: ActorRef)(implicit ec: ExecutionContext)
 
   override def receive: Receive = waiting
 
+
+
   def waiting: Receive = {
     // When the user connects, tell the chat room about it so messages
     // sent to the chat room are routed here
-    case Connected(userActor) =>
-      //log.info(s"WS user: $userActor has connected")
-      context become connected(userActor)
-      (chatRoomActor ? JoinRoom(userActor)) onComplete {
-        case Success(_) => {
-          userActor ! OutgoingMessage(event = "connection_established", data = Some(""""{"socket_id":"123712.927749","activity_timeout":120}"""))
-        }
-        case Failure(_) =>
-      }
+    case Connect(userActor) =>
+      context.become(connected(userActor))
+      chatRoomActor ! JoinRoom
   }
 
-  def connected(userActor: ActorRef)(implicit ec: ExecutionContext) : Receive = {
+  def connected(userActor: ActorRef, socketId: String = UUID.randomUUID().toString): Receive = {
 
-    // any messages coming from the WS client will come here and will be sent to the chat room
+    // ---------------
+    // Commands
+    // ---------------
+
+    // Incoming message
+    // ------------------------------------------------------------
     case msg: IncomingMessage if msg.event == "pusher:subscribe" =>
-      val channel = msg.data.map(_.get("channel")).flatten.map(_.toString()).getOrElse("default")
-      (chatRoomActor ? SubscribeChannel(channel)) onComplete {
-        case Success(_) =>
-          userActor ! (OutgoingMessage(event = "pusher_internal:subscription_succeeded", channel = Some(channel)))
-        case Failure(_) =>
-      }
-
+      val channel = msg.data.flatMap(_.get("channel")).map(_.toString()).getOrElse("default")
+      chatRoomActor ! SubscribeChannel(channel)
 
     case msg: IncomingMessage if msg.event == "pusher:unsubscribe" =>
-      val channel = msg.data.map(_.get("channel")).flatten.map(_.toString()).getOrElse("default")
-      (chatRoomActor ? UnsubscribeChannel(channel)) onComplete {
-        case Success(_) =>
-          userActor ! OutgoingMessage(event = "pusher_internal:unsubscription_succeeded", channel = Some(channel))
-        case Failure(_) =>
-      }
-
+      val channel = msg.data.flatMap(_.get("channel")).map(_.toString()).getOrElse("default")
+      chatRoomActor ! UnsubscribeChannel(channel)
 
     case msg: IncomingMessage if msg.event == "pusher:ping" =>
       userActor ! OutgoingMessage(event = "pusher:pong")
 
+    //case msg: IncomingMessage =>
+    //  chatRoomActor ! PublishMessage(channels = List("myChannel1"), event = msg.event, data = Some(msg.data.toString))
 
-    // any messages coming from the chat room need to be sent to the WS Client
-    // remember that in this case we are the intermediate bridge and we have to send the message to the ActorPublisher
-    // in order for the WS client to receive the message
+
+    // Send message
+    // ------------------------------------------------------------
     case msg: OutgoingMessage =>
-      log.debug(s"Intermediate Actor sending message that came from the chat room to $userActor")
       userActor ! msg
+
+
+    // ---------------
+    // Event
+    // ---------------
+    case ConnectionEstablished =>
+      userActor ! OutgoingMessage(event = "connection_established", data = Some(s""""{"socket_id":"$socketId","activity_timeout":120}"""))
+
+    case UnsubscriptionSucceeded(channel) =>
+      userActor ! OutgoingMessage(event = "pusher_internal:subscription_succeeded", channel = Some(channel))
+
+    case SubscriptionSucceeded(channel) =>
+      userActor ! OutgoingMessage(event = "pusher_internal:unsubscription_succeeded", channel = Some(channel))
+
+    case MessageReceived(channel, event, data) =>
+      userActor !  OutgoingMessage(event = event, channel = Some(channel), data = data)
   }
 
 }

@@ -9,36 +9,32 @@ class ChatRoomActor extends Actor with ActorLogging {
   override def receive: Actor.Receive = {
 
     case JoinRoom =>
-      log.info(s"${sender.toString()} : Joined")
+      log.info(s"$sender is Joining")
       // we want to remove the user if it's actor is stopped
       context watch sender
-      sender ! None
+      sender() ! ConnectedUserActor.ConnectionEstablished
 
     case Terminated(userActor) =>
       log.info(s"$userActor is leaving")
       Chats.removeUser(userActor)
 
-    case cm: ChatMessage =>
-      log.info(s"Received a ChatMessage message from ${sender}")
-      Chats.getUsersChannel(sender.toString) foreach (_ ! cm)
-
-    case msg: MessageAdded =>
-      log.info(s"${sender.toString()} : messageAdded to ${msg.channels.mkString(",")} : ${msg.event} : ${msg.data}")
-      msg.channels foreach (channel =>
+    case msg: PublishMessage =>
+      log.debug(s"messageAdded to ${msg.channels.mkString(",")} : ${msg.event} : ${msg.data}")
+      msg.channels foreach { channel =>
         Chats.getUsersChannel(channel) foreach { actor =>
-          log.info(s"send message to ${actor.toString()}")
-          actor ! ConnectedUserActor.OutgoingMessage(channel = Some(channel), event = msg.event, data = msg.data)}
-        )
+          actor ! ConnectedUserActor.MessageReceived(channel = channel, event = msg.event, data = msg.data)
+        }
+      }
 
     case SubscribeChannel(channel) =>
-      log.info(s"${sender.toString()} : SubscribeChannel to $channel")
+      log.info(s"$sender : Subscribe to $channel")
       Chats.addUserChannel(sender, channel)
-      sender ! None
+      sender ! ConnectedUserActor.SubscriptionSucceeded
 
     case UnsubscribeChannel(channel) =>
-      log.info(s"${sender.toString()} : UnsubscribeChannel to $channel")
+      log.info(s"$sender : Unsubscribe to $channel")
       Chats.removeUserChannel(sender, channel)
-      sender ! None
+      sender ! ConnectedUserActor.UnsubscriptionSucceeded
 
     case GetChannels =>
       sender ! Chats.getChannels
@@ -47,47 +43,40 @@ class ChatRoomActor extends Actor with ActorLogging {
 }
 
 
-
 object ChatRoomActor {
 
-  sealed trait ChannelEvent
+  sealed trait Command
+  case object JoinRoom extends Command
+  case class SubscribeChannel(channel: String) extends Command
+  case class UnsubscribeChannel(channel: String) extends Command
+  case class PublishMessage(channels: List[String], event: String, data: Option[String])
 
-  case class JoinRoom(userActor: ActorRef) extends ChannelEvent
+  sealed trait Query
+  case object GetChannels extends Query
 
-  case class SubscribeChannel(channel: String)
-
-  case class UnsubscribeChannel(channel: String)
-
-  case class MessageAdded(channels: List[String], event: String, data: Option[String]) extends ChannelEvent
-
-  sealed trait ChannelQuery
-
-  case object GetChannels extends ChannelQuery
-
-  case class ChatMessage(message: String)
 
 }
 
 object Chats {
 
-  private var chats: Map[String, Set[ActorRef]] = Map.empty[String, Set[ActorRef]]
+  private var chats = List.empty[(String, ActorRef)]
 
   def addUserChannel(userActor: ActorRef, channel: String) {
-    chats = chats + chats.find(_._1 == channel).map(c => (c._1, c._2 + userActor)).getOrElse((channel, Set(userActor)))
+    chats = (channel, userActor) :: chats.filterNot(_._1 == channel)
   }
 
   def removeUserChannel(userActor: ActorRef, channel: String) {
-    chats = chats.filterNot(_._1 == channel) ++ chats.filter(_._1 == channel).map(s => (s._1, s._2.filterNot(_ == userActor))).filterNot(_._2.isEmpty)
+    chats = chats.filterNot(record => record._1 == channel && record._2 == userActor)
   }
 
-  def removeUser(userActor: ActorRef): Unit = {
-    chats = chats.map(s => (s._1, s._2.filterNot(_ == userActor))).filterNot(_._2.isEmpty)
+  def removeUser(userActor: ActorRef) {
+    chats = chats.filterNot(_._2 == userActor)
   }
 
-  def getUsersChannel(channel: String) =
-    chats filter (_._1 == channel) flatMap (_._2)
+  def getUsersChannel(channel: String): List[ActorRef] =
+    chats.filter(_._1 == channel).map(_._2)
 
 
-  def getChannels =
-    chats map (channel => (channel._1, channel._2.toList.length.toLong))
+  def getChannels: Map[String, Long] =
+    chats.groupBy(_._1).mapValues(_.map(_._2).length.toLong)
 }

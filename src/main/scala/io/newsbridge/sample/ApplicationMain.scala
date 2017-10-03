@@ -9,7 +9,7 @@ import com.typesafe.config.ConfigFactory
 import io.newsbridge.sample.back.BackService
 import io.newsbridge.sample.swagger.SwaggerDocService
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.ExecutionContext
 
 object ApplicationMain extends App with Directives {
 
@@ -35,7 +35,7 @@ object ApplicationMain extends App with Directives {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   // needed for the future map/flatMap in the end
-  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   // needed for shutdown properly
   sys.addShutdownHook(system.terminate())

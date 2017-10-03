@@ -29,7 +29,6 @@
     $send.prop("disabled", true)
     connection.onopen = function () {
         $send.prop("disabled", false)
-        $messages.prepend($("<li>Connected</li>"))
         subscribe("myChannel1")
     }
 
@@ -51,21 +50,13 @@
 
     $send.on('click', function () {
         var text = $message.val()
+        connection.send('{"event":"client:message", "data":{"msg":"'+ text +'"}}')
         $message.val("")
-        connection.send(text)
     })
 
 
     $subscribe.on('click', function () {
         subscribe($channel.val())
-        /*
-        var text = '{"event":"pusher:subscribe","data":{"channel":"' + $channel.val() + '"}}'
-        var element = document.createElement("div");
-        element.id = 'channel-' + $channel.val();
-        element.innerHTML = $channel.val() + ' <a href="#" onclick="unsubscribe(\'' + $channel.val() + '\');">remove</a>';
-        connection.send(text)
-        document.getElementById('lc').appendChild(element);
-        */
         $channel.val("")
     })
 

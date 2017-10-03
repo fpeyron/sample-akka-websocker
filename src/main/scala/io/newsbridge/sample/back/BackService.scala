@@ -94,14 +94,14 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
     post {
       entity(as[PushEventRequest]) { request =>
         complete {
-          chatRoomActor ! ChatRoomActor.MessageAdded(channels = request.channels, event = request.name, data = request.data)
-          HttpResponse(
-            status = StatusCodes.OK
-          )
+          chatRoomActor ! ChatRoomActor.PublishMessage(channels = request.channels, event = request.name, data = request.data)
+            HttpResponse(
+              status = StatusCodes.OK
+            )
+          }
         }
       }
     }
-  }
 
 
   @Path("/batch_events")
@@ -118,7 +118,7 @@ class BackService(chatRoomActor: ActorRef)(implicit executionContext: ExecutionC
       entity(as[PushEventsRequest]) { request =>
         complete {
           request.batch map { event =>
-            chatRoomActor ! ChatRoomActor.MessageAdded(channels = List(event.channel), event = event.name, data = event.data)
+            chatRoomActor ! ChatRoomActor.PublishMessage(channels = List(event.channel), event = event.name, data = event.data)
           }
           HttpResponse(
             status = StatusCodes.OK

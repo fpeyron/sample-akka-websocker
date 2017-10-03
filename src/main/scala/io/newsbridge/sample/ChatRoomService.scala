@@ -32,7 +32,6 @@ class ChatRoomService(chatRoomActor: ActorRef)(implicit ec: ExecutionContext, sy
 
     // create a user actor per webSocket connection
     val connectedWsActor = system actorOf(ConnectedUserActor.props(chatRoomActor))
-    //val connectedWsActor = system.actorOf(Props(new ConnectedUserActor(chatRoomActor)))
 
     // incomingMessages representation
     val incomingMessages: Sink[Message, NotUsed] =
@@ -49,7 +48,7 @@ class ChatRoomService(chatRoomActor: ActorRef)(implicit ec: ExecutionContext, sy
           // you need to send a Connected message to get the actor in a state
           // where it's ready to receive and send messages, we used the mapMaterialized value
           // so we can get access to it as soon as this is materialized
-          connectedWsActor ! ConnectedUserActor.Connected(outgoingActor)
+          connectedWsActor ! ConnectedUserActor.Connect(outgoingActor)
           NotUsed
         }
         .map {
