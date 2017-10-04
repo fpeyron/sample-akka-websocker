@@ -1,7 +1,6 @@
 
 organization := "io.newsbridge.sample"
 name := "sample-akka-http-docker"
-version := "1.0.0"
 
 scalaVersion := "2.12.3"
 
