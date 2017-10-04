@@ -42,3 +42,5 @@ lazy val root = (project in file("."))
       releaseTagComment    := s"Releasing ${(version in ThisBuild).value}",
     releaseTagName := s"v-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
   )
+
+// version staging
