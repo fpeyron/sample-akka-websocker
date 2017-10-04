@@ -38,6 +38,7 @@ dockerUpdateLatest := true
 
 lazy val root = (project in file("."))
   .settings(
-    releaseTagComment    := s"Releasing ${(version in ThisBuild).value}",
+    publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository"))),
+      releaseTagComment    := s"Releasing ${(version in ThisBuild).value}",
     releaseTagName := s"v-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
   )
