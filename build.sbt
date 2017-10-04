@@ -34,3 +34,10 @@ maintainer in Docker := "contrib@newsbridge.io"
 dockerBaseImage := "openjdk:latest"
 dockerExposedPorts := Seq(8080)
 dockerUpdateLatest := true
+
+
+lazy val root = (project in file("."))
+  .settings(
+    releaseTagComment    := s"Releasing ${(version in ThisBuild).value}",
+    releaseTagName := s"v-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
+  )
