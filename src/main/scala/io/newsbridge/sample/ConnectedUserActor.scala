@@ -10,7 +10,7 @@ object ConnectedUserActor {
 
   sealed trait Command
   case class Connect(outgoing: ActorRef) extends Command
-  case class IncomingMessage(event: String, data: Option[Map[String, String]] = None) extends Command
+  case class IncomingMessage(event: String, data: Option[Map[String, String]] = None, channel: Option[String] = None, message: Option[String] = None) extends Command
   case class OutgoingMessage(event: String, channel: Option[String] = None, data: Option[String] = None) extends Command
 
   sealed trait Event
@@ -63,8 +63,8 @@ class ConnectedUserActor(chatRoomActor: ActorRef) extends Actor with ActorLoggin
     case msg: IncomingMessage if msg.event == "pusher:ping" =>
       userActor ! OutgoingMessage(event = "pusher:pong")
 
-    //case msg: IncomingMessage =>
-    //  chatRoomActor ! PublishMessage(channels = List("myChannel1"), event = msg.event, data = Some(msg.data.toString))
+    case msg: IncomingMessage if(msg.channel.isDefined) =>
+      chatRoomActor ! ChatRoomActor.PublishMessage(channels = List(msg.channel.get), event = msg.event, data = msg.message)
 
 
     // Send message
@@ -79,10 +79,10 @@ class ConnectedUserActor(chatRoomActor: ActorRef) extends Actor with ActorLoggin
     case ConnectionEstablished =>
       userActor ! OutgoingMessage(event = "connection_established", data = Some(s""""{"socket_id":"$socketId","activity_timeout":120}"""))
 
-    case UnsubscriptionSucceeded(channel) =>
+    case SubscriptionSucceeded(channel) =>
       userActor ! OutgoingMessage(event = "pusher_internal:subscription_succeeded", channel = Some(channel))
 
-    case SubscriptionSucceeded(channel) =>
+    case UnsubscriptionSucceeded(channel) =>
       userActor ! OutgoingMessage(event = "pusher_internal:unsubscription_succeeded", channel = Some(channel))
 
     case MessageReceived(channel, event, data) =>

@@ -1,8 +1,8 @@
-import sbt.Keys.mainClass
 import com.servicerocket.sbt.release.git.flow.Steps._
+import sbt.Keys.mainClass
 
 organization := "io.newsbridge.sample"
-name := "sample-akka-http-docker"
+name := "sample-websocket"
 
 scalaVersion := "2.12.3"
 
@@ -54,41 +54,37 @@ lazy val dockerMaintainer = "Newsbridge technical support <develop@newsbridge.io
 lazy val dockerRootImage = "openjdk:8u141-jre-slim"
 
 
-lazy val root = (project in file("."))
-
+enablePlugins(DockerPlugin, JavaAppPackaging)
   // Ensures fat jar gets published too
-  .settings(
-  mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain"),
-  mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain"),
-  addArtifact(Artifact("sample-akka-http-docker", "assembly"), sbtassembly.AssemblyKeys.assembly),
+  mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain")
+  mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
+  addArtifact(Artifact("sample-websocket", "assembly"), sbtassembly.AssemblyKeys.assembly)
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies, // : ReleaseStep
     checkGitFlowExists,
     inquireVersions, // : ReleaseStep
     runClean, // : ReleaseStep
     runTest, // : ReleaseStep
-    gitFlowReleaseStart,  // : Gitflow
+    gitFlowReleaseStart, // : Gitflow
     setReleaseVersion, // : ReleaseStep
     commitReleaseVersion, // : ReleaseStep, performs the initial git checks
     //tagRelease, // : ReleaseStep
     publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
     releaseStepCommand("docker:publishLocal"),
-    gitFlowReleaseFinish,  // : Gitflow
-    pushMaster,            // : Gitflox
+    gitFlowReleaseFinish, // : Gitflow
+    pushMaster, // : Gitflox
     setNextVersion, // : ReleaseStep
     commitNextVersion, // : ReleaseStep
     pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
   )
-)
-  .enablePlugins(DockerPlugin, JavaAppPackaging)
-  .settings(
-    packageName in Docker := s"${dockerPrefix}${name.value}",
-    maintainer in Docker := dockerMaintainer,
-    dockerBaseImage := dockerRootImage,
-    dockerEntrypoint := Seq(s"bin/${name.value.toLowerCase}"),
-    dockerExposedPorts := Seq(8180),
-    dockerUpdateLatest := true
-  )
+
+  packageName in Docker := s"${dockerPrefix}sample-websocket"
+  maintainer in Docker := dockerMaintainer
+  dockerBaseImage := dockerRootImage
+  dockerEntrypoint := Seq(s"bin/${name.value.toLowerCase}")
+  dockerExposedPorts := Seq(8080)
+  dockerUpdateLatest := true
+
 
 
 // MY update staging

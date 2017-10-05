@@ -3,7 +3,7 @@ package io.newsbridge.sample
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
-import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
+import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.OverflowStrategy
@@ -18,7 +18,7 @@ class ChatRoomService(chatRoomActor: ActorRef)(implicit ec: ExecutionContext, sy
   import spray.json._
 
   implicit val timeout: Timeout = Timeout(2.seconds)
-  implicit val incomingMessage = jsonFormat2(ConnectedUserActor.IncomingMessage)
+  implicit val incomingMessage = jsonFormat4(ConnectedUserActor.IncomingMessage)
   implicit val outgoingMessage = jsonFormat3(ConnectedUserActor.OutgoingMessage)
 
 
@@ -54,10 +54,11 @@ class ChatRoomService(chatRoomActor: ActorRef)(implicit ec: ExecutionContext, sy
         }
         .map {
           // Domain Model => WebSocket Message
-          case msg: ConnectedUserActor.OutgoingMessage => TextMessage(msg.toJson.toString())
+          case msg: ConnectedUserActor.OutgoingMessage =>
+            TextMessage(msg.toJson.toString())
         }
         // timeout
-        .keepAlive(FiniteDuration(60, TimeUnit.SECONDS), () => TextMessage.Strict("ping"))
+        //.keepAlive(FiniteDuration(60, TimeUnit.SECONDS), () => TextMessage.Strict("ping"))
 
     // then combine both to a flow
     Flow.fromSinkAndSource(incomingMessages, outgoingMessages)

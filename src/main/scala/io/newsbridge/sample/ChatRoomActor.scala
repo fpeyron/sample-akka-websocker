@@ -29,12 +29,12 @@ class ChatRoomActor extends Actor with ActorLogging {
     case SubscribeChannel(channel) =>
       log.info(s"$sender : Subscribe to $channel")
       Chats.addUserChannel(sender, channel)
-      sender ! ConnectedUserActor.SubscriptionSucceeded
+      sender ! ConnectedUserActor.SubscriptionSucceeded(channel)
 
     case UnsubscribeChannel(channel) =>
       log.info(s"$sender : Unsubscribe to $channel")
       Chats.removeUserChannel(sender, channel)
-      sender ! ConnectedUserActor.UnsubscriptionSucceeded
+      sender ! ConnectedUserActor.UnsubscriptionSucceeded(channel)
 
     case GetChannels =>
       sender ! Chats.getChannels

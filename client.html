@@ -7,28 +7,33 @@
 </head>
 <body>
 
-<textarea id="message"></textarea>
-<button id="send">Send</button>
-<ul id="messages"></ul>
+Channel <input id="msgChannel"><br/>
+Event<input id="msgEvent"><br/>
+<textarea id="msgData"></textarea><br/>
+<button id="msgSend">Send</button>
+
 <br/><br/>
 <input id="channel">
 <button id="subscribe">Subscribe</button>
 <br/>
-
 <div id="lc"></div>
+<br/><br/>
+<ul id="messages"></ul>
 
 
 <script language="javascript">
-    var $messages = $("#messages"),
-        $send = $("#send"),
-        $message = $("#message"),
+    var $msgData = $("#msgData"),
+        $msgEvent = $("#msgEvent"),
+        $msgChannel = $("#msgChannel"),
+        $msgSend = $("#msgSend"),
+        $messages = $("#messages"),
         $channel = $("#channel"),
         $subscribe = $("#subscribe"),
-        connection = new WebSocket('ws://test:1234@localhost:8180/chat')
+        connection = new WebSocket('ws://test:1234@localhost:8080/chat')
 
-    $send.prop("disabled", true)
+    $msgSend.prop("disabled", true)
     connection.onopen = function () {
-        $send.prop("disabled", false)
+        $msgSend.prop("disabled", false)
         subscribe("myChannel1")
     }
 
@@ -48,10 +53,9 @@
         return
     }
 
-    $send.on('click', function () {
-        var text = $message.val()
-        connection.send('{"event":"client:message", "data":{"msg":"'+ text +'"}}')
-        $message.val("")
+    $msgSend.on('click', function () {
+        connection.send('{"event":"'+ $msgEvent.val() +'","channel":"'+ $msgChannel.val()+'", "message":"'+ $msgData.val().replace('"','\\"' ) +'"}')
+        //$msgData.val("")
     })
 
 

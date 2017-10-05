@@ -23,7 +23,7 @@ object ApplicationMain extends App with Directives {
        |app {
        |  http-service {
        |    address = "0.0.0.0"
-       |    port = 8180
+       |    port = 8080
        |  }
        |}
        """.stripMargin).withFallback(ConfigFactory.load())
