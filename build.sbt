@@ -37,10 +37,10 @@ dockerExposedPorts := Seq(8080)
 dockerUpdateLatest := true
 
 import ReleaseTransformations._
-addArtifact(Artifact("myProject", "assembly"), sbtassembly.AssemblyKeys.assembly)
-releaseProcess := Seq[ReleaseStep](
-  publishArtifacts
-)
+//addArtifact(Artifact("myProject", "assembly"), sbtassembly.AssemblyKeys.assembly)
+//releaseProcess := Seq[ReleaseStep](
+//  publishArtifacts
+//)
 
 
 lazy val root = (project in file("."))
@@ -51,7 +51,10 @@ lazy val root = (project in file("."))
     releaseTagComment := s"Releasing ${(version in ThisBuild).value}",
     releaseTagName := s"v-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
     mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain"),
-    mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
+    mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain"),
+    releaseProcess := Seq[ReleaseStep](
+      publishArtifacts
+    )
   )
 
 // version master
