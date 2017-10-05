@@ -54,4 +54,4 @@ lazy val root = (project in file("."))
     mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
   )
 
-// version staging
+// version master
