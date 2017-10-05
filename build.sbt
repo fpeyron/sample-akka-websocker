@@ -62,11 +62,14 @@ lazy val root = (project in file("."))
     inquireVersions, // : ReleaseStep
     runClean, // : ReleaseStep
     runTest, // : ReleaseStep
+    gitFlowReleaseStart,  // : Gitflow
     setReleaseVersion, // : ReleaseStep
     commitReleaseVersion, // : ReleaseStep, performs the initial git checks
     tagRelease, // : ReleaseStep
     publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
     releaseStepCommand("docker:publishLocal"),
+    gitFlowReleaseFinish,  // : Gitflow
+    pushMaster,            // : Gitflox
     setNextVersion, // : ReleaseStep
     commitNextVersion, // : ReleaseStep
     pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
