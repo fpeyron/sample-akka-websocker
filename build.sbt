@@ -36,9 +36,17 @@ dockerBaseImage := "openjdk:latest"
 dockerExposedPorts := Seq(8080)
 dockerUpdateLatest := true
 
+import ReleaseTransformations._
+addArtifact(Artifact("myProject", "assembly"), sbtassembly.AssemblyKeys.assembly)
+releaseProcess := Seq[ReleaseStep](
+  publishArtifacts
+)
+
 
 lazy val root = (project in file("."))
-  .settings(
+
+// Ensures fat jar gets published too
+    .settings(
     publishTo := Some(Resolver.file("file", new File(Path.userHome.absolutePath + "/.m2/repository"))),
     releaseTagComment := s"Releasing ${(version in ThisBuild).value}",
     releaseTagName := s"v-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
