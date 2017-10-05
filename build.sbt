@@ -42,9 +42,8 @@ lazy val root = (project in file("."))
     publishTo := Some(Resolver.file("file", new File(Path.userHome.absolutePath + "/.m2/repository"))),
     releaseTagComment := s"Releasing ${(version in ThisBuild).value}",
     releaseTagName := s"v-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
-    mainClass in assembly := Some("io.newsbrige.sampe.ApplicationMain"),
-    mainClass in Compile := Some("io.newsbrige.sampe.ApplicationMain")
-
+    mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain"),
+    mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
   )
 
 // version staging
