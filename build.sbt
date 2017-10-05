@@ -38,9 +38,9 @@ dockerExposedPorts := Seq(8080)
 dockerUpdateLatest := true
 
 // Publish
-publishTo := Some(Resolver.file("file", new File(Path.userHome.absolutePath + "/.m2/repository"))),
-releaseTagComment := s"Releasing ${(version in ThisBuild).value}",
-releaseTagName := s"${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
+publishTo := Some(Resolver.file("file", new File(Path.userHome.absolutePath + "/.m2/repository")))
+releaseTagComment := s"Releasing ${(version in ThisBuild).value}"
+releaseTagName := s"${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
 
 
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
