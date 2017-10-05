@@ -66,6 +66,7 @@ lazy val root = (project in file("."))
     commitReleaseVersion, // : ReleaseStep, performs the initial git checks
     tagRelease, // : ReleaseStep
     publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
+    releaseStepCommand("docker:publishLocal"),
     setNextVersion, // : ReleaseStep
     commitNextVersion, // : ReleaseStep
     pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
