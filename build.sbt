@@ -52,6 +52,7 @@ lazy val root = (project in file("."))
   releaseTagName := s"v-${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}",
   mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain"),
   mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain"),
+  addArtifact(Artifact("myProject", "assembly"), sbtassembly.AssemblyKeys.assembly),
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies, // : ReleaseStep
     inquireVersions,           // : ReleaseStep
