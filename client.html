@@ -53,8 +53,10 @@ Event<input id="msgEvent"><br/>
         return
     }
 
+    var regex = new RegExp('"', 'g');
+
     $msgSend.on('click', function () {
-        connection.send('{"event":"'+ $msgEvent.val() +'","channel":"'+ $msgChannel.val()+'", "message":"'+ $msgData.val().replace('"','\\"' ) +'"}')
+        connection.send('{"event":"'+ $msgEvent.val() +'","channel":"'+ $msgChannel.val()+'", "message":"'+ $msgData.val().replace(regex,'\\"' ) +'"}')
         //$msgData.val("")
     })
 
