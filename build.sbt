@@ -1,4 +1,5 @@
 import sbt.Keys.mainClass
+import com.servicerocket.sbt.release.git.flow.Steps._
 
 organization := "io.newsbridge.sample"
 name := "sample-akka-http-docker"
