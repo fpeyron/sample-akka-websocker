@@ -63,13 +63,14 @@ lazy val root = (project in file("."))
   addArtifact(Artifact("sample-akka-http-docker", "assembly"), sbtassembly.AssemblyKeys.assembly),
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies, // : ReleaseStep
+    checkGitFlowExists,
     inquireVersions, // : ReleaseStep
     runClean, // : ReleaseStep
     runTest, // : ReleaseStep
     gitFlowReleaseStart,  // : Gitflow
     setReleaseVersion, // : ReleaseStep
     commitReleaseVersion, // : ReleaseStep, performs the initial git checks
-    tagRelease, // : ReleaseStep
+    //tagRelease, // : ReleaseStep
     publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
     releaseStepCommand("docker:publishLocal"),
     gitFlowReleaseFinish,  // : Gitflow
