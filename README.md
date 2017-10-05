@@ -66,6 +66,3 @@ curl http://0.0.0.0:8080/hello/fred
 
 ### License
 This library is licensed under the Apache License, Version 2.0.
-
-
-myHotFix
