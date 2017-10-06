@@ -64,5 +64,11 @@ docker run --name sample-akka-http-docker -p 8080:8080 677537359471.dkr.ecr.eu-w
 curl http://0.0.0.0:8080/hello/fred
 ```
 
+## Release
+```
+$(aws ecr get-login --no-include-email --region eu-west-1)
+sbt release
+```
+
 ### License
 This library is licensed under the Apache License, Version 2.0.

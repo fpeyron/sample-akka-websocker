@@ -84,7 +84,3 @@ enablePlugins(DockerPlugin, JavaAppPackaging)
   dockerEntrypoint := Seq(s"bin/${name.value.toLowerCase}")
   dockerExposedPorts := Seq(8080)
   dockerUpdateLatest := true
-
-
-
-// MY update staging
