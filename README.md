@@ -74,8 +74,4 @@ sbt release
 This library is licensed under the Apache License, Version 2.0.
 
 
-myHotFix
-myFeature2
-
-myFeature1
-myFeature3
+sdf
