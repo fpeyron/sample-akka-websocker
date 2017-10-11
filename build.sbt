@@ -61,21 +61,22 @@ enablePlugins(DockerPlugin, JavaAppPackaging)
   addArtifact(Artifact("sample-websocket", "assembly"), sbtassembly.AssemblyKeys.assembly)
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies, // : ReleaseStep
-    checkGitFlowExists,
+    //checkGitFlowExists,
     inquireVersions, // : ReleaseStep
+    CommandExample.initFlow,
     runClean, // : ReleaseStep
     runTest, // : ReleaseStep
-    gitFlowReleaseStart, // : Gitflow
+    //gitFlowReleaseStart, // : Gitflow
     setReleaseVersion, // : ReleaseStep
     commitReleaseVersion, // : ReleaseStep, performs the initial git checks
-    //tagRelease, // : ReleaseStep
+    tagRelease, // : ReleaseStep
     publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
-    releaseStepCommand("docker:publishLocal"),
-    gitFlowReleaseFinish, // : Gitflow
-    pushMaster, // : Gitflox
+    //releaseStepCommand("docker:publishLocal"),
+    //gitFlowReleaseFinish, // : Gitflow
+    CommandExample.mergeFlow, // : Gitflox
     setNextVersion, // : ReleaseStep
     commitNextVersion, // : ReleaseStep
-    pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
+    CommandExample.pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
   )
 
   packageName in Docker := s"${dockerPrefix}sample-websocket"
