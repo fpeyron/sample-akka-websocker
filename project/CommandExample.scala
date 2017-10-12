@@ -28,7 +28,7 @@ object CommandExample {
   lazy val initFlow: ReleaseStep = ReleaseStep(
     action = { st: State =>
       // 1. Synchronisation avec remote
-      "git fetch origin".! match {
+      "git fetch -p origin".! match {
         case 0 => // do nothing
         case _ => sys.error("cannot fetch with origin repository")
       }
