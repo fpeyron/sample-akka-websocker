@@ -70,7 +70,7 @@ enablePlugins(DockerPlugin, JavaAppPackaging)
     setReleaseVersion, // : ReleaseStep
     commitReleaseVersion, // : ReleaseStep, performs the initial git checks
     tagRelease, // : ReleaseStep
-    publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
+    //publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
     //releaseStepCommand("docker:publishLocal"),
     //gitFlowReleaseFinish, // : Gitflow
     CommandExample.mergeFlow, // : Gitflox
