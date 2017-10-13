@@ -83,7 +83,7 @@ object ReleaseCommand {
       }
 
       // 5. Merge release to master
-      s"git merge --no-ff --no-commit release/$version".! match {
+      s"git merge --no-ff release/$version".! match {
         case 0 => // do nothing
         case _ => sys.error(s"failure on creating release branch release/$version!")
       }
@@ -95,7 +95,7 @@ object ReleaseCommand {
       }
 
       // 5. Merge release to staging
-      s"git merge --no-ff --no-commit release/$version".! match {
+      s"git merge --no-ff release/$version".! match {
         case 0 => // do nothing
         case _ => sys.error(s"failure on creating release branch release/$version!")
       }
