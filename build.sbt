@@ -1,4 +1,3 @@
-import com.servicerocket.sbt.release.git.flow.Steps._
 import sbt.Keys.mainClass
 
 organization := "io.newsbridge.sample"
@@ -63,20 +62,19 @@ enablePlugins(DockerPlugin, JavaAppPackaging)
     checkSnapshotDependencies, // : ReleaseStep
     //checkGitFlowExists,
     inquireVersions, // : ReleaseStep
-    CommandExample.initFlow,
+    ReleaseCommand.initFlow,
     runClean, // : ReleaseStep
     runTest, // : ReleaseStep
     //gitFlowReleaseStart, // : Gitflow
     setReleaseVersion, // : ReleaseStep
     commitReleaseVersion, // : ReleaseStep, performs the initial git checks
     tagRelease, // : ReleaseStep
-    //publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
+    publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
     //releaseStepCommand("docker:publishLocal"),
-    //gitFlowReleaseFinish, // : Gitflow
-    CommandExample.mergeFlow, // : Gitflox
+    ReleaseCommand.mergeFlow, // : Gitflox
     setNextVersion, // : ReleaseStep
     commitNextVersion, // : ReleaseStep
-    CommandExample.pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
+    ReleaseCommand.pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
   )
 
   packageName in Docker := s"${dockerPrefix}sample-websocket"

@@ -4,7 +4,7 @@ import sbtrelease.ReleasePlugin.autoImport.{ReleaseKeys, ReleaseStep}
 
 // imports standard command parsing functionality
 
-object CommandExample {
+object ReleaseCommand {
   // A simple, no-argument command that prints "Hi",
   //  leaving the current state unchanged.
   def hello = Command.command("hello") { state =>
@@ -61,7 +61,7 @@ object CommandExample {
       val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
       s"git checkout --track origin/release/$version 2>/dev/null".! match {
         case 0 => // do nothing
-        case _ => s"git co staging -B release/$version".! match {
+        case _ => s"git checkout staging -B release/$version".! match {
           case 0 => // do nothing
           case _ => sys.error(s"failure on creating release branch release/$version!")
         }
@@ -77,25 +77,31 @@ object CommandExample {
       val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
 
       // Checkout on master branch
-      s"git co master".! match {
+      s"git checkout master".! match {
         case 0 => // do nothing
         case _ => sys.error("failure to checkout on master!")
       }
 
       // 5. Merge release to master
-      s"git merge --no-ff release/$version".! match {
+      s"git merge --no-ff --no-commit release/$version".! match {
         case 0 => // do nothing
         case _ => sys.error(s"failure on creating release branch release/$version!")
       }
 
       // Checkout on staging branch
-      s"git co staging".! match {
+      s"git checkout staging".! match {
         case 0 => // do nothing
         case _ => sys.error("failure to checkout on staging!")
       }
 
       // 5. Merge release to staging
-      s"git merge --no-ff release/$version".! match {
+      s"git merge --no-ff --no-commit release/$version".! match {
+        case 0 => // do nothing
+        case _ => sys.error(s"failure on creating release branch release/$version!")
+      }
+
+      // Remove release branch
+      s"git branch -D release/$version".! match {
         case 0 => // do nothing
         case _ => sys.error(s"failure on creating release branch release/$version!")
       }
@@ -105,33 +111,27 @@ object CommandExample {
     enableCrossBuild = false
   )
 
-lazy val pushChanges: ReleaseStep = ReleaseStep(
-  action = { st: State =>
-    val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
+  lazy val pushChanges: ReleaseStep = ReleaseStep(
+    action = { st: State =>
+      val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
 
-    // Checkout on master branch
-    s"git push origin master staging".! match {
-      case 0 => // do nothing
-      case _ => sys.error("failure to checkout on master!")
-    }
+      // Checkout on master branch
+      s"git push origin master staging".! match {
+        case 0 => // do nothing
+        case _ => sys.error("failure to checkout on master!")
+      }
 
-    s"git push origin :release/$version 2>/dev/null"
-
-    // Remove release branch
-    s"git branch -D release/$version".! match {
-      case 0 => // do nothing
-      case _ => sys.error(s"failure on creating release branch release/$version!")
-    }
+      s"git push origin :release/$version 2>/dev/null"
 
 
-    // 5. Merge release to master
-    s"git push --tag -f".! match {
-      case 0 => // do nothing
-      case _ => sys.error(s"failure on creating release branch release/$version!")
-    }
+      // 5. Merge release to master
+      s"git push --tag -f".! match {
+        case 0 => // do nothing
+        case _ => sys.error(s"failure on creating release branch release/$version!")
+      }
 
-    st
-  },
-  enableCrossBuild = false
-)
+      st
+    },
+    enableCrossBuild = false
+  )
 }
