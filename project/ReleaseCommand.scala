@@ -61,7 +61,7 @@ object ReleaseCommand {
       val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
       s"git checkout --track origin/release/$version 2>/dev/null".! match {
         case 0 => // do nothing
-        case _ => s"git checkout staging -B release/$version".! match {
+        case _ => s"git checkout -b release/$version staging".! match {
           case 0 => // do nothing
           case _ => sys.error(s"failure on creating release branch release/$version!")
         }
@@ -83,7 +83,7 @@ object ReleaseCommand {
       }
 
       // 5. Merge release to master
-      s"git merge --ff-only release/$version".! match {
+      s"git merge release/$version".! match {
         case 0 => // do nothing
         case _ => sys.error(s"failure on creating release branch release/$version!")
       }
@@ -95,13 +95,13 @@ object ReleaseCommand {
       }
 
       // 5. Merge release to staging
-      s"git merge --ff-only release/$version".! match {
+      s"git merge release/$version".! match {
         case 0 => // do nothing
         case _ => sys.error(s"failure on creating release branch release/$version!")
       }
 
       // Remove release branch
-      s"git branch -D release/$version".! match {
+      s"git branch -d release/$version".! match {
         case 0 => // do nothing
         case _ => sys.error(s"failure on creating release branch release/$version!")
       }
