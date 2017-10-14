@@ -59,7 +59,7 @@ object ReleaseCommand {
 
       // 5. Create or reset release branch
       val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
-      s"git checkout --track origin/release/$version 2>/dev/null".! match {
+      s"git checkout release/$version 2>/dev/null".! match {
         case 0 => // do nothing
         case _ => s"git checkout -b release/$version staging".! match {
           case 0 => // do nothing
