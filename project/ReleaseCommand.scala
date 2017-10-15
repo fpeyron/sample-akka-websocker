@@ -48,7 +48,7 @@ object ReleaseCommand {
 
       // 4. Check behind file on master branch
       Process("git rev-list master..origin/master --count").!! match {
-        case 0 => // do nothing
+        case "0" => // do nothing
         case test => sys.error(s"Fails because some commit are behing on master branch! |$test|")
       }
 
