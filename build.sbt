@@ -69,7 +69,6 @@ enablePlugins(DockerPlugin, JavaAppPackaging)
     setNextVersion,
     commitNextVersion,
     publishArtifacts,
-    ReleaseCommand.amazonConnect,
-    releaseStepCommand("docker:publish"),
+    ReleaseCommand.publishDocker,
     ReleaseCommand.pushChanges
 )

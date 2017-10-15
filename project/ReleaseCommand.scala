@@ -132,23 +132,15 @@ object ReleaseCommand {
   )
 
 
-  lazy val amazonConnect: ReleaseStep = ReleaseStep(
-    action = { st: State =>
-      val cmd = Process("aws ecr get-login --no-include-email").!!
-      s"$cmd".! match {
-        case 0 => // do nothing
-        case _ => sys.error("failure to checkout on master!")
-      }
-
-      st
-    },
-    enableCrossBuild = false
-  )
-
-
   lazy val publishDocker: ReleaseStep = ReleaseStep(
     action = { st: State =>
       if (!st.get(ReleaseKeysOption.skipDocker).getOrElse(false)) {
+
+        val cmd = Process("aws ecr get-login --no-include-email").!!
+        s"$cmd".! match {
+          case 0 => // do nothing
+          case _ => sys.error("failure to checkout on master!")
+        }
 
         Parser.parse("docker:publishLocal", st.combinedParser) match {
           case Right(cmd) => cmd()
