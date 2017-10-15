@@ -34,28 +34,31 @@ object ReleaseCommand {
         case _ => sys.error("cannot fetch with origin repository")
       }
 
-      // 3. Check master
+      // 2. Check unstagged file on master branch
       "git diff master --quiet master".! match {
         case 0 => // do nothing
-        case _ => sys.error("release failed because some files are unstagged on master branch!")
+        case _ => sys.error("Fails because some file are unstagged on master branch!")
       }
 
-      // 3. Check staging
+      // 3. Check unstagged file on staging branch
       "git diff staging --quiet staging".! match {
         case 0 => // do nothing
-        case _ => sys.error("release failed because some files are unstagged on staging branch!")
+        case _ => sys.error("Fails because some file are unstagged on staging branch!")
       }
 
-      "$(git rev-list master..origin/master --count) == 0".! match{
-        case c:Int if c == 0 => // do nothing
-        case c:Int  => sys.error("Need to pull master branch")
+      // 4. Check behind file on master branch
+      "[ 0 -eq \"$(git rev-list master..origin/master --count)\" ] ".! match{
+        case 0 => // do nothing
+        case _ => sys.error("Fails because some commit are behing on master branch!")
       }
 
+      // 5. Check behind file on staging branch
       "$(git rev-list staging..origin/staging --count) == 0".! match{
-        case c:Int if c == 0 => // do nothing
-        case c:Int  => sys.error("Need to pull staging branch")
+        case 0 => // do nothing
+        case _ => sys.error("Fails because some commit are behing on staging branch!")
       }
 
+      /*
       // 3. Check master
       "git diff master --quiet master origin/master".! match {
         case 0 => // do nothing
@@ -67,6 +70,7 @@ object ReleaseCommand {
         case 0 => // do nothing
         case _ => sys.error("release failed because some commits are unsynchronized on staging branch!")
       }
+      */
 
       // 5. Create or reset release branch
       val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
