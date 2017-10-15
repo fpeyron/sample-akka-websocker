@@ -46,9 +46,15 @@ object ReleaseCommand {
         case _ => sys.error("release failed because some files are unstagged on staging branch!")
       }
 
+      "git rev-list master..origin/master --count".! match{
+        case c:Int if c == 0 => // do nothing
+        case c:Int  => sys.error("Need to pull master branch")
+        case _  => sys.error("KO other")
+      }
+
       "git rev-list staging..origin/staging --count".! match{
-        case c:Int if c == 0 => sys.error("OK is 0")
-        case c:Int  => sys.error("KO <> 0")
+        case c:Int if c == 0 => // do nothing
+        case c:Int  => sys.error("Need to pull staging branch")
         case _  => sys.error("KO other")
       }
 
