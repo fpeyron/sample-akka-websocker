@@ -27,6 +27,7 @@ object ReleaseCommand {
 
   lazy val initFlow: ReleaseStep = ReleaseStep(
     action = { st: State =>
+
       // 1. Synchronisation avec remote
       "git fetch -p origin".! match {
         case 0 => // do nothing
@@ -43,6 +44,12 @@ object ReleaseCommand {
       "git diff staging --quiet staging".! match {
         case 0 => // do nothing
         case _ => sys.error("release failed because some files are unstagged on staging branch!")
+      }
+
+      "git rev-list staging..origin/staging --count".! match{
+        case c:Int if c == 0 => sys.error("OK is 0")
+        case c:Int  => sys.error("KO <> 0")
+        case _  => sys.error("KO other")
       }
 
       // 3. Check master
