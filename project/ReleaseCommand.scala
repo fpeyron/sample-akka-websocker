@@ -1,5 +1,6 @@
 import sbt.Keys._
 import sbt._
+import sbt.complete.Parser
 import sbtrelease.ReleasePlugin.autoImport.{ReleaseKeys, ReleaseStep}
 
 
@@ -42,7 +43,7 @@ object ReleaseCommand {
       // 4. Check behind file on master branch
       Process("git rev-list master..origin/master --count").!! match {
         case "0\n" => // do nothing
-        case test => sys.error(s"Fails because some commit are behing on master branch! You need to pull master branch")
+        case _ => sys.error(s"Fails because some commit are behing on master branch! You need to pull master branch")
       }
 
       // 5. Check behind file on staging branch
@@ -143,4 +144,24 @@ object ReleaseCommand {
     },
     enableCrossBuild = false
   )
+
+
+  lazy val publishDocker: ReleaseStep = ReleaseStep(
+    action = { st: State =>
+      if (!st.get(ReleaseKeysOption.skipDocker).getOrElse(false)) {
+
+        Parser.parse("docker:publishLocal", st.combinedParser) match {
+          case Right(cmd) => cmd()
+          case Left(msg) => throw sys.error(s"Invalid programmatic input:\n$msg")
+        }
+      }
+
+      st
+    },
+    enableCrossBuild = true
+  )
+
+  object ReleaseKeysOption {
+    val skipDocker = AttributeKey[Boolean]("releaseSkipDocker")
+  }
 }
