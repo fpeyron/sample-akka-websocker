@@ -133,7 +133,7 @@ object ReleaseCommand {
 
   lazy val amazonConnect: ReleaseStep = ReleaseStep(
     action = { st: State =>
-      "$(aws ecr get-login --no-include-email)".!{
+      "$(aws ecr get-login --no-include-email)".! match {
         case 0 => // do nothing
         case _ => sys.error("failure to checkout on master!")
       }
