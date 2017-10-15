@@ -4,7 +4,7 @@ import sbt.complete.DefaultParsers._
 import sbt.complete.Parser
 import sbtrelease.ReleasePlugin.autoImport.{ReleaseKeys, ReleaseStep}
 
-object ReleaseCommand {
+object SbtGitFlowReleaseCommand {
 
   lazy val runTest: ReleaseStep = ReleaseStep(
     action = { st: State =>
@@ -153,16 +153,9 @@ object ReleaseCommand {
     enableCrossBuild = true
   )
 
+
   object ReleaseKeysOption {
     val skipDocker = AttributeKey[Boolean]("releaseSkipDocker")
-
-    private[this] val SkipDocker: Parser[ParseResult] =
-      (Space ~> token("skip-docker")) ^^^ ParseResult.SkipDocker
-  }
-
-  private[this] sealed abstract class ParseResult extends Product with Serializable
-  private[this] object ParseResult {
-    case object SkipDocker extends ParseResult
   }
 
 }

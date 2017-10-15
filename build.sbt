@@ -1,6 +1,4 @@
 import sbt.Keys.mainClass
-import sbtrelease.ReleaseStateTransformations.publishArtifacts
-import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 
 organization := "io.newsbridge.sample"
 name := "sample-websocket"
@@ -29,7 +27,7 @@ dependencyOverrides += "com.typesafe.akka" %% "akka-actor" % akkaVersion
 // ----------------
 
 // Docker packaging
-enablePlugins(DockerPlugin, JavaAppPackaging)
+enablePlugins(DockerPlugin, JavaAppPackaging, SbtGitFlowReleasePlugin)
 packageName in Docker := name.value
 version in Docker := version.value
 maintainer in Docker := "contrib@newsbridge.io"
@@ -51,24 +49,7 @@ releaseTagName := s"${if (releaseUseGlobalVersion.value) (version in ThisBuild).
 
 
 // Release steps
-enablePlugins(DockerPlugin, JavaAppPackaging)
-  // Ensures fat jar gets published too
-  mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain")
-  mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
-  addArtifact(Artifact("sample-websocket", "assembly"), sbtassembly.AssemblyKeys.assembly)
-  releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies,
-    inquireVersions,
-    ReleaseCommand.initFlow,
-    runClean,
-    runTest,
-    setReleaseVersion,
-    commitReleaseVersion,
-    tagRelease,
-    ReleaseCommand.mergeFlow,
-    setNextVersion,
-    commitNextVersion,
-    publishArtifacts,
-    ReleaseCommand.publishDocker,
-    ReleaseCommand.pushChanges
-)
+// Ensures fat jar gets published too
+mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain")
+mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
+addArtifact(Artifact("sample-websocket", "assembly"), sbtassembly.AssemblyKeys.assembly)
