@@ -28,6 +28,7 @@ dependencyOverrides += "com.typesafe.akka" %% "akka-actor" % akkaVersion
 
 // Docker packaging
 enablePlugins(DockerPlugin, JavaAppPackaging)
+disablePlugins(ReleasePlugin)
 packageName in Docker := name.value
 version in Docker := version.value
 maintainer in Docker := "contrib@newsbridge.io"
