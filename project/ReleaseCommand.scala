@@ -48,13 +48,13 @@ object ReleaseCommand {
 
       // 4. Check behind file on master branch
       Process("git rev-list master..origin/master --count").!! match {
-        case "0" => // do nothing
+        case "0\n" => // do nothing
         case test => sys.error(s"Fails because some commit are behing on master branch! |$test|")
       }
 
       // 5. Check behind file on staging branch
       Process("git rev-list staging..origin/staging --count").!! match {
-        case "0" => // do nothing
+        case "0\n" => // do nothing
         case _ => sys.error("Fails because some commit are behing on staging branch!")
       }
 
