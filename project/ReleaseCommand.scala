@@ -47,13 +47,13 @@ object ReleaseCommand {
       }
 
       // 4. Check behind file on master branch
-      Process("rev-list master..origin/master --count").!! match {
+      Process("git rev-list master..origin/master --count").!! match {
         case "0" => // do nothing
         case _ => sys.error("Fails because some commit are behing on master branch!")
       }
 
       // 5. Check behind file on staging branch
-      Process("rev-list staging..origin/staging --count").!! match {
+      Process("git rev-list staging..origin/staging --count").!! match {
         case "0" => // do nothing
         case _ => sys.error("Fails because some commit are behing on staging branch!")
       }
