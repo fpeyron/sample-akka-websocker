@@ -1,4 +1,5 @@
 import sbt.Keys.mainClass
+import sbtrelease.ReleaseStateTransformations.publishArtifacts
 
 organization := "io.newsbridge.sample"
 name := "sample-websocket"
@@ -59,22 +60,20 @@ enablePlugins(DockerPlugin, JavaAppPackaging)
   mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
   addArtifact(Artifact("sample-websocket", "assembly"), sbtassembly.AssemblyKeys.assembly)
   releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies, // : ReleaseStep
-    //checkGitFlowExists,
-    inquireVersions, // : ReleaseStep
+    checkSnapshotDependencies,
+    inquireVersions,
     ReleaseCommand.initFlow,
-    runClean, // : ReleaseStep
-    runTest, // : ReleaseStep
-    //gitFlowReleaseStart, // : Gitflow
-    setReleaseVersion, // : ReleaseStep
-    commitReleaseVersion, // : ReleaseStep, performs the initial git checks
-    tagRelease, // : ReleaseStep
-    publishArtifacts, // : ReleaseStep, checks whether `publishTo` is properly set up
-    //releaseStepCommand("docker:publishLocal"),
-    ReleaseCommand.mergeFlow, // : Gitflox
-    setNextVersion, // : ReleaseStep
-    commitNextVersion, // : ReleaseStep
-    ReleaseCommand.pushChanges // : ReleaseStep, also checks that an upstream branch is properly configured
+    runClean,
+    runTest,
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    ReleaseCommand.mergeFlow,
+    setNextVersion,
+    commitNextVersion,
+    ReleaseCommand.pushChanges,
+    publishArtifacts,
+    releaseStepCommand("docker:publishLocal")
   )
 
   packageName in Docker := s"${dockerPrefix}sample-websocket"
