@@ -1,5 +1,6 @@
 import sbt.Keys.mainClass
 import sbtrelease.ReleaseStateTransformations.publishArtifacts
+import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 
 organization := "io.newsbridge.sample"
 name := "sample-websocket"
@@ -29,31 +30,27 @@ dependencyOverrides += "com.typesafe.akka" %% "akka-actor" % akkaVersion
 
 // Docker packaging
 enablePlugins(DockerPlugin, JavaAppPackaging)
-
 packageName in Docker := name.value
 version in Docker := version.value
 maintainer in Docker := "contrib@newsbridge.io"
 dockerBaseImage := "openjdk:latest"
 dockerExposedPorts := Seq(8080)
 dockerUpdateLatest := true
+packageName in Docker := "677537359471.dkr.ecr.eu-west-1.amazonaws.com/sample-websocket"
+maintainer in Docker := "Newsbridge technical support <develop@newsbridge.io>"
+dockerBaseImage := "openjdk:8u141-jre-slim"
+dockerEntrypoint := Seq(s"bin/${name.value.toLowerCase}")
+dockerExposedPorts := Seq(8080)
+dockerUpdateLatest := true
 
-// Publish
+// Publish release
 publishTo := Some(Resolver.file("file", new File(Path.userHome.absolutePath + "/.m2/repository")))
 releaseTagComment := s"Releasing ${(version in ThisBuild).value}"
 releaseTagName := s"${if (releaseUseGlobalVersion.value) (version in ThisBuild).value else version.value}"
 
 
-import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
-//addArtifact(Artifact("myProject", "assembly"), sbtassembly.AssemblyKeys.assembly)
-//releaseProcess := Seq[ReleaseStep](
-//  publishArtifacts
-//)
 
-lazy val dockerPrefix = "677537359471.dkr.ecr.eu-west-1.amazonaws.com/"
-lazy val dockerMaintainer = "Newsbridge technical support <develop@newsbridge.io>"
-lazy val dockerRootImage = "openjdk:8u141-jre-slim"
-
-
+// Release steps
 enablePlugins(DockerPlugin, JavaAppPackaging)
   // Ensures fat jar gets published too
   mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain")
@@ -71,20 +68,8 @@ enablePlugins(DockerPlugin, JavaAppPackaging)
     ReleaseCommand.mergeFlow,
     setNextVersion,
     commitNextVersion,
-    ReleaseCommand.pushChanges,
     publishArtifacts,
-    releaseStepCommand("docker:publishLocal")
-  )
-
-  packageName in Docker := s"${dockerPrefix}sample-websocket"
-  maintainer in Docker := dockerMaintainer
-  dockerBaseImage := dockerRootImage
-  dockerEntrypoint := Seq(s"bin/${name.value.toLowerCase}")
-  dockerExposedPorts := Seq(8080)
-  dockerUpdateLatest := true
-
-
-// myfeature2 : commit 1
-
-
-//myfeature4
+    ReleaseCommand.amazonConnect,
+    releaseStepCommand("docker:publish"),
+    ReleaseCommand.pushChanges,
+)

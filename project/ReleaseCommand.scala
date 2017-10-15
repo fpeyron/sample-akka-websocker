@@ -2,16 +2,8 @@ import sbt.Keys._
 import sbt._
 import sbtrelease.ReleasePlugin.autoImport.{ReleaseKeys, ReleaseStep}
 
-// imports standard command parsing functionality
 
 object ReleaseCommand {
-  // A simple, no-argument command that prints "Hi",
-  //  leaving the current state unchanged.
-  def hello = Command.command("hello") { state =>
-    println("Hi!")
-    state
-  }
-
 
   lazy val runTest: ReleaseStep = ReleaseStep(
     action = { st: State =>
@@ -73,6 +65,7 @@ object ReleaseCommand {
     enableCrossBuild = false
   )
 
+
   lazy val mergeFlow: ReleaseStep = ReleaseStep(
     action = { st: State =>
       val version = st.get(ReleaseKeys.versions).map(_._1).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
@@ -80,37 +73,38 @@ object ReleaseCommand {
       // Checkout on master branch
       s"git checkout master".! match {
         case 0 => // do nothing
-        case _ => sys.error("failure to checkout on master!")
+        case _ => sys.error("Unable to checkout master branch !")
       }
 
       // 5. Merge release to master
       s"git merge release/$version".! match {
         case 0 => // do nothing
-        case _ => sys.error(s"failure on creating release branch release/$version!")
+        case _ => sys.error(s"Unable to merge release branch release/$version on master!")
       }
 
       // Checkout on staging branch
       s"git checkout staging".! match {
         case 0 => // do nothing
-        case _ => sys.error("failure to checkout on staging!")
+        case _ => sys.error("Unable to checkout staging branch !")
       }
 
       // 5. Merge release to staging
       s"git merge release/$version".! match {
         case 0 => // do nothing
-        case _ => sys.error(s"failure on creating release branch release/$version!")
+        case _ => sys.error(s"Unable to merge release branch release/$version on master!")
       }
 
       // Remove release branch
       s"git branch -d release/$version".! match {
         case 0 => // do nothing
-        case _ => sys.error(s"failure on creating release branch release/$version!")
+        case _ => sys.error(s"Unable to delete release branch release/$version!")
       }
 
       st
     },
     enableCrossBuild = false
   )
+
 
   lazy val pushChanges: ReleaseStep = ReleaseStep(
     action = { st: State =>
@@ -119,7 +113,7 @@ object ReleaseCommand {
       // Checkout on master branch
       s"git push origin master staging".! match {
         case 0 => // do nothing
-        case _ => sys.error("failure to checkout on master!")
+        case _ => sys.error("Unable to push master and stagin branches on origin!")
       }
 
       s"git push origin :release/$version 2>/dev/null"
@@ -128,9 +122,21 @@ object ReleaseCommand {
       // 5. Merge release to master
       s"git push --tag -f".! match {
         case 0 => // do nothing
-        case _ => sys.error(s"failure on creating release branch release/$version!")
+        case _ => sys.error(s"Unable to push tag $version!")
       }
 
+      st
+    },
+    enableCrossBuild = false
+  )
+
+
+  lazy val amazonConnect: ReleaseStep = ReleaseStep(
+    action = { st: State =>
+      "$(aws ecr get-login --no-include-email)".!{
+        case 0 => // do nothing
+        case _ => sys.error("failure to checkout on master!")
+      }
       st
     },
     enableCrossBuild = false
