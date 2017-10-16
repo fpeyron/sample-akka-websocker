@@ -50,7 +50,7 @@ releaseTagName := s"${if (releaseUseGlobalVersion.value) (version in ThisBuild).
 
 // Release steps
 // Ensures fat jar gets published too
+enablePlugins(SbtGitFlowReleasePlugin)
 mainClass in assembly := Some("io.newsbridge.sample.ApplicationMain")
 mainClass in Compile := Some("io.newsbridge.sample.ApplicationMain")
 addArtifact(Artifact("sample-websocket", "assembly"), sbtassembly.AssemblyKeys.assembly)
-enablePlugins(GitFlowReleasePlugin)

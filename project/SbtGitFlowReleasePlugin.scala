@@ -3,7 +3,7 @@ import sbtrelease.ReleasePlugin
 import sbtrelease.ReleasePlugin.autoImport.{ReleaseStep, releaseProcess}
 import sbtrelease.ReleaseStateTransformations._
 
-object GitFlowReleasePlugin extends AutoPlugin {
+object SbtGitFlowReleasePlugin extends AutoPlugin {
 
   private val releaseSteps = Seq[ReleaseStep](
     checkSnapshotDependencies,
